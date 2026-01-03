@@ -25,6 +25,9 @@ get_header();
         <section class="talks-episodes">
             <h2>Featured Interviews</h2>
             <?php
+            // Get current page number
+            $paged = ( get_query_var( 'paged' ) ) ? get_query_var( 'paged' ) : 1;
+            
             // Query for TCP Talks category or custom post type
             $talks_query = new WP_Query( array(
                 'post_type'      => 'podcast',
@@ -32,6 +35,7 @@ get_header();
                 'category_name'  => 'tcp-talks', // Adjust based on your taxonomy
                 'orderby'        => 'date',
                 'order'          => 'DESC',
+                'paged'          => $paged,
             ) );
 
             if ( $talks_query->have_posts() ) :
@@ -44,6 +48,26 @@ get_header();
                     endwhile;
                     ?>
                 </div>
+                
+                <?php
+                // Pagination
+                $total_pages = $talks_query->max_num_pages;
+                if ( $total_pages > 1 ) :
+                    ?>
+                    <div class="pagination">
+                        <?php
+                        echo paginate_links( array(
+                            'base'      => get_pagenum_link( 1 ) . '%_%',
+                            'format'    => 'page/%#%/',
+                            'current'   => $paged,
+                            'total'     => $total_pages,
+                            'prev_text' => '← Previous',
+                            'next_text' => 'Next →',
+                        ) );
+                        ?>
+                    </div>
+                <?php endif; ?>
+                
                 <?php
                 wp_reset_postdata();
             else :
