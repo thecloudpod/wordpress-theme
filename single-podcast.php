@@ -121,17 +121,42 @@ get_header();
                 </div>
             <?php endif; ?>
 
-            <div class="entry-content">
-                <?php
-                the_content();
+            <div class="single-episode-layout">
+                <div class="episode-main-content">
+                    <div class="entry-content">
+                        <?php
+                        the_content();
 
-                wp_link_pages(
-                    array(
-                        'before' => '<div class="page-links">' . esc_html__( 'Pages:', 'cloudpod' ),
-                        'after'  => '</div>',
-                    )
-                );
-                ?>
+                        wp_link_pages(
+                            array(
+                                'before' => '<div class="page-links">' . esc_html__( 'Pages:', 'cloudpod' ),
+                                'after'  => '</div>',
+                            )
+                        );
+                        ?>
+                    </div>
+                </div>
+                
+                <aside class="episode-sidebar">
+                    <div class="about-podcast-widget">
+                        <h3>About The Cloud Pod</h3>
+                        <div class="about-content">
+                            <p>The Cloud Pod is your weekly source for AWS, Azure, Google Cloud, and Oracle Cloud news. We break down the latest cloud computing developments with expert analysis and industry insights.</p>
+                            <p><strong>Perfect for:</strong></p>
+                            <ul>
+                                <li>Cloud engineers and architects</li>
+                                <li>DevOps professionals</li>
+                                <li>IT decision makers</li>
+                                <li>Anyone working with cloud platforms</li>
+                            </ul>
+                            <p class="episode-count">Join <?php echo cloudpod_get_episode_count(); ?>+ episodes of cloud expertise</p>
+                            <div class="about-actions">
+                                <a href="<?php echo esc_url( home_url( '/subscribe' ) ); ?>" class="btn-primary btn-small">Subscribe</a>
+                                <a href="<?php echo esc_url( home_url( '/about-us' ) ); ?>" class="btn-secondary btn-small">Learn More</a>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
             </div>
 
             <footer class="entry-footer">

@@ -112,6 +112,41 @@ get_header();
     </div>
 </section>
 
+<!-- Newsletter Signup Section -->
+<section class="newsletter-section">
+    <div class="container">
+        <div class="newsletter-content">
+            <div class="newsletter-text">
+                <h2>Stay Ahead of the Cloud</h2>
+                <p>Get the latest cloud computing news, episode alerts, and exclusive insights delivered to your inbox. Join thousands of cloud professionals staying informed.</p>
+            </div>
+            <div class="newsletter-form-container">
+                <!-- Mailchimp embed form goes here -->
+                <div id="mc_embed_shell">
+                    <form action="" method="post" id="mc-embedded-subscribe-form" name="mc-embedded-subscribe-form" class="validate" target="_blank">
+                        <div id="mc_embed_signup_scroll">
+                            <div class="mc-field-group">
+                                <input type="email" name="EMAIL" class="required email" id="mce-EMAIL" required="" placeholder="Enter your email" value="">
+                            </div>
+                            <div id="mce-responses" class="clear">
+                                <div class="response" id="mce-error-response" style="display: none;"></div>
+                                <div class="response" id="mce-success-response" style="display: none;"></div>
+                            </div>
+                            <div aria-hidden="true" style="position: absolute; left: -5000px;">
+                                <input type="text" name="b_" tabindex="-1" value="">
+                            </div>
+                            <div class="clear">
+                                <input type="submit" name="subscribe" id="mc-embedded-subscribe" class="button" value="Subscribe">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <p class="newsletter-note">We respect your privacy. Unsubscribe anytime.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
 <!-- Two Column Layout -->
 <div class="home-two-column">
     <div class="container">
