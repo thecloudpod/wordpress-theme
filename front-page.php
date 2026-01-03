@@ -283,21 +283,10 @@ get_header();
     </div>
 </section>
 
-<!-- Newsletter Signup Section -->
-<section class="newsletter-section">
-    <div class="container">
-        <div class="newsletter-content">
-            <div class="newsletter-text">
-                <h2>Stay Ahead of the Cloud</h2>
-                <p>Get the latest cloud computing news, episode alerts, and exclusive insights delivered to your inbox. Join thousands of cloud professionals staying informed.</p>
-            </div>
-            <div class="newsletter-form-container">
-                <?php echo do_shortcode('[emailoctopus form_id="c8fa39e2-e877-11f0-8e2b-a394fe7edc92"]'); ?>
-                <p class="newsletter-note">We respect your privacy. Unsubscribe anytime.</p>
-            </div>
-        </div>
-    </div>
-</section>
+<?php 
+// EmailOctopus popup form - renders as side popover
+echo do_shortcode('[emailoctopus form_id="c8fa39e2-e877-11f0-8e2b-a394fe7edc92"]'); 
+?>
 
 <?php
 get_footer();
