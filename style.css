@@ -1610,7 +1610,8 @@ p {
     display: flex;
     justify-content: center;
     gap: 0.5rem;
-    margin: 4rem 0 2rem;
+    margin: 4rem 0 6rem;
+    padding-bottom: 2rem;
 }
 
 .pagination .nav-links {
