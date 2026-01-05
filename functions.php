@@ -74,18 +74,18 @@ add_action( 'after_setup_theme', 'cloudpod_content_width', 0 );
  */
 function cloudpod_scripts() {
     // Main stylesheet
-    wp_enqueue_style( 'cloudpod-style', get_stylesheet_uri(), array(), '1.1.0' );
+    wp_enqueue_style( 'cloudpod-style', get_stylesheet_uri(), array(), '1.1.1' );
 
     // Custom JavaScript with defer loading
-    wp_enqueue_script( 'cloudpod-audio-player', get_template_directory_uri() . '/js/audio-player.js', array(), '1.1.0', true );
+    wp_enqueue_script( 'cloudpod-audio-player', get_template_directory_uri() . '/js/audio-player.js', array(), '1.1.1', true );
     wp_script_add_data( 'cloudpod-audio-player', 'defer', true );
     
-    wp_enqueue_script( 'cloudpod-navigation', get_template_directory_uri() . '/js/navigation.js', array(), '1.1.0', true );
+    wp_enqueue_script( 'cloudpod-navigation', get_template_directory_uri() . '/js/navigation.js', array(), '1.1.1', true );
     wp_script_add_data( 'cloudpod-navigation', 'defer', true );
     
     // Homepage player
     if ( is_front_page() ) {
-        wp_enqueue_script( 'cloudpod-homepage-player', get_template_directory_uri() . '/js/homepage-player.js', array(), '1.1.0', true );
+        wp_enqueue_script( 'cloudpod-homepage-player', get_template_directory_uri() . '/js/homepage-player.js', array(), '1.1.1', true );
         wp_script_add_data( 'cloudpod-homepage-player', 'defer', true );
     }
 
@@ -417,3 +417,73 @@ function cloudpod_rankmath_post_types( $post_types ) {
     return $post_types;
 }
 add_filter( 'rank_math/metabox/post_types', 'cloudpod_rankmath_post_types' );
+
+/**
+ * Additional Performance Optimizations
+ */
+
+// Remove WordPress emoji scripts
+remove_action( 'wp_head', 'print_emoji_detection_script', 7 );
+remove_action( 'wp_print_styles', 'print_emoji_styles' );
+
+// Disable WordPress embeds
+function cloudpod_disable_embeds() {
+    wp_dequeue_script( 'wp-embed' );
+}
+add_action( 'wp_footer', 'cloudpod_disable_embeds' );
+
+// Remove query strings from static resources
+function cloudpod_remove_query_strings( $src ) {
+    if ( strpos( $src, '?ver=' ) ) {
+        $src = remove_query_arg( 'ver', $src );
+    }
+    return $src;
+}
+add_filter( 'script_loader_src', 'cloudpod_remove_query_strings', 15, 1 );
+add_filter( 'style_loader_src', 'cloudpod_remove_query_strings', 15, 1 );
+
+// Preload key resources
+function cloudpod_preload_resources() {
+    echo '<link rel="preload" href="' . get_stylesheet_uri() . '" as="style">';
+}
+add_action( 'wp_head', 'cloudpod_preload_resources', 1 );
+
+// Optimize image loading with fetchpriority
+function cloudpod_add_fetchpriority( $attr, $attachment ) {
+    // Add high priority to first image (typically hero)
+    static $image_count = 0;
+    $image_count++;
+    
+    if ( $image_count === 1 ) {
+        $attr['fetchpriority'] = 'high';
+        unset( $attr['loading'] ); // Remove lazy loading from first image
+    }
+    
+    return $attr;
+}
+add_filter( 'wp_get_attachment_image_attributes', 'cloudpod_add_fetchpriority', 20, 2 );
+
+// Defer CSS loading for non-critical stylesheets
+function cloudpod_defer_css( $html, $handle ) {
+    // Don't defer main stylesheet
+    if ( $handle === 'cloudpod-style' ) {
+        return $html;
+    }
+    
+    // Defer other stylesheets
+    $html = str_replace( "rel='stylesheet'", "rel='preload' as='style' onload=\"this.onload=null;this.rel='stylesheet'\"", $html );
+    return $html;
+}
+add_filter( 'style_loader_tag', 'cloudpod_defer_css', 10, 2 );
+
+// Add width and height attributes to images
+function cloudpod_add_image_dimensions( $image, $attachment_id, $size ) {
+    if ( strpos( $image, ' width=' ) === false ) {
+        $image_meta = wp_get_attachment_metadata( $attachment_id );
+        if ( ! empty( $image_meta['width'] ) && ! empty( $image_meta['height'] ) ) {
+            $image = str_replace( '<img ', '<img width="' . $image_meta['width'] . '" height="' . $image_meta['height'] . '" ', $image );
+        }
+    }
+    return $image;
+}
+add_filter( 'post_thumbnail_html', 'cloudpod_add_image_dimensions', 10, 3 );
