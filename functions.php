@@ -74,15 +74,19 @@ add_action( 'after_setup_theme', 'cloudpod_content_width', 0 );
  */
 function cloudpod_scripts() {
     // Main stylesheet
-    wp_enqueue_style( 'cloudpod-style', get_stylesheet_uri(), array(), '1.0.0' );
+    wp_enqueue_style( 'cloudpod-style', get_stylesheet_uri(), array(), '1.1.0' );
 
-    // Custom JavaScript
-    wp_enqueue_script( 'cloudpod-audio-player', get_template_directory_uri() . '/js/audio-player.js', array(), '1.0.0', true );
-    wp_enqueue_script( 'cloudpod-navigation', get_template_directory_uri() . '/js/navigation.js', array(), '1.0.0', true );
+    // Custom JavaScript with defer loading
+    wp_enqueue_script( 'cloudpod-audio-player', get_template_directory_uri() . '/js/audio-player.js', array(), '1.1.0', true );
+    wp_script_add_data( 'cloudpod-audio-player', 'defer', true );
+    
+    wp_enqueue_script( 'cloudpod-navigation', get_template_directory_uri() . '/js/navigation.js', array(), '1.1.0', true );
+    wp_script_add_data( 'cloudpod-navigation', 'defer', true );
     
     // Homepage player
     if ( is_front_page() ) {
-        wp_enqueue_script( 'cloudpod-homepage-player', get_template_directory_uri() . '/js/homepage-player.js', array(), '1.0.0', true );
+        wp_enqueue_script( 'cloudpod-homepage-player', get_template_directory_uri() . '/js/homepage-player.js', array(), '1.1.0', true );
+        wp_script_add_data( 'cloudpod-homepage-player', 'defer', true );
     }
 
     // Localize script with episode data
@@ -103,6 +107,33 @@ function cloudpod_scripts() {
     }
 }
 add_action( 'wp_enqueue_scripts', 'cloudpod_scripts' );
+
+/**
+ * Enable lazy loading for images
+ */
+function cloudpod_add_lazy_loading( $attr, $attachment, $size ) {
+    $attr['loading'] = 'lazy';
+    return $attr;
+}
+add_filter( 'wp_get_attachment_image_attributes', 'cloudpod_add_lazy_loading', 10, 3 );
+
+/**
+ * Add WebP support
+ */
+function cloudpod_enable_webp_upload( $mimes ) {
+    $mimes['webp'] = 'image/webp';
+    return $mimes;
+}
+add_filter( 'mime_types', 'cloudpod_enable_webp_upload' );
+
+/**
+ * Generate responsive image sizes
+ */
+function cloudpod_responsive_images() {
+    add_image_size( 'cloudpod-mobile', 600, 400, true );
+    add_image_size( 'cloudpod-tablet', 900, 600, true );
+}
+add_action( 'after_setup_theme', 'cloudpod_responsive_images' );
 
 /**
  * Register widget areas
@@ -337,3 +368,52 @@ function cloudpod_register_elementor_locations( $elementor_theme_manager ) {
     $elementor_theme_manager->register_location( 'footer' );
 }
 add_action( 'elementor/theme/register_locations', 'cloudpod_register_elementor_locations' );
+
+/**
+ * Rank Math SEO Compatibility
+ * Ensures Rank Math can set custom meta for homepage and custom page templates
+ */
+function cloudpod_rankmath_support() {
+    // Add Rank Math SEO support
+    add_theme_support( 'rank-math-breadcrumbs' );
+    
+    // Ensure front-page.php is recognized as the homepage for SEO
+    add_filter( 'rank_math/frontend/title', 'cloudpod_rankmath_homepage_title', 10, 1 );
+    add_filter( 'rank_math/frontend/description', 'cloudpod_rankmath_homepage_description', 10, 1 );
+}
+add_action( 'after_setup_theme', 'cloudpod_rankmath_support' );
+
+/**
+ * Allow Rank Math to customize homepage title
+ */
+function cloudpod_rankmath_homepage_title( $title ) {
+    if ( is_front_page() ) {
+        $custom_title = get_post_meta( get_option( 'page_on_front' ), 'rank_math_title', true );
+        if ( ! empty( $custom_title ) ) {
+            return $custom_title;
+        }
+    }
+    return $title;
+}
+
+/**
+ * Allow Rank Math to customize homepage description
+ */
+function cloudpod_rankmath_homepage_description( $description ) {
+    if ( is_front_page() ) {
+        $custom_description = get_post_meta( get_option( 'page_on_front' ), 'rank_math_description', true );
+        if ( ! empty( $custom_description ) ) {
+            return $custom_description;
+        }
+    }
+    return $description;
+}
+
+/**
+ * Add Rank Math meta box to custom page templates
+ */
+function cloudpod_rankmath_post_types( $post_types ) {
+    $post_types[] = 'podcast';
+    return $post_types;
+}
+add_filter( 'rank_math/metabox/post_types', 'cloudpod_rankmath_post_types' );

@@ -4,7 +4,7 @@ Theme URI: https://www.thecloudpod.net
 Author: SaaS 11, LLC
 Author URI: https://www.thecloudpod.net
 Description: A modern, cloud-themed podcast website for The Cloud Pod - Your Weekly Cloud Podcast covering AWS, Azure, GCP, and multi-cloud news.
-Version: 1.0.9
+Version: 1.1.0
 License: GNU General Public License v2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 Text Domain: cloudpod
@@ -321,16 +321,29 @@ p {
     background-size: 200% 100%;
     animation: stormPulse 8s ease-in-out infinite;
     pointer-events: none;
+    will-change: opacity;
 }
 
 @keyframes stormPulse {
     0%, 100% {
         opacity: 0.3;
-        background-position: 0% 0%;
+        transform: translateZ(0);
     }
     50% {
         opacity: 0.6;
-        background-position: 100% 0%;
+        transform: translateZ(0);
+    }
+}
+
+/* Disable heavy animations on mobile for better performance */
+@media (max-width: 768px) {
+    .hero-section::before {
+        opacity: 0.3;
+    }
+    
+    .hero-section::after {
+        animation: none;
+        opacity: 0.4;
     }
 }
 
@@ -1776,6 +1789,7 @@ p {
     
     .hero-section {
         padding: 3rem 0 4rem;
+        background: linear-gradient(135deg, #0a1628 0%, #162238 50%, #0f1b2e 100%);
     }
     
     .stats-grid {

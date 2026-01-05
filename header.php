@@ -4,6 +4,24 @@
     <meta charset="<?php bloginfo( 'charset' ); ?>">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="profile" href="https://gmpg.org/xfn/11">
+    
+    <!-- Resource Hints for Performance -->
+    <link rel="preconnect" href="https://feeds.castos.com" crossorigin>
+    <link rel="dns-prefetch" href="https://feeds.castos.com">
+    
+    <!-- Critical CSS for Above-the-Fold Content -->
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        :root{--cloud-blue:#0A7AFF;--cloud-dark:#1A1F36;--cloud-light:#FFFFFF;--shadow-sm:0 2px 8px rgba(10,122,255,.1)}
+        body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;font-size:18px;line-height:1.7;color:var(--cloud-dark);background:var(--cloud-light);-webkit-font-smoothing:antialiased}
+        .site{display:flex;flex-direction:column;min-height:100vh}
+        .site-header{background:var(--cloud-light);box-shadow:var(--shadow-sm);position:sticky;top:0;z-index:999}
+        .site-header .container{display:flex;justify-content:space-between;align-items:center;padding:1.5rem;max-width:1200px;margin:0 auto}
+        .site-content{flex:1}
+        img{max-width:100%;height:auto}
+        @media(max-width:768px){.site-header .container{flex-wrap:wrap;padding:1rem}}
+    </style>
+    
     <?php wp_head(); ?>
 </head>
 
