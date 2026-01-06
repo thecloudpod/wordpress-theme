@@ -14,8 +14,8 @@ get_header();
 <section class="hero-section hero-compact">
     <div class="container">
         <div class="hero-content">
-            <h1><?php bloginfo( 'name' ); ?></h1>
-            <p>Your weekly deep dive into AWS, Azure, Google Cloud, and Oracle Cloud news. Expert analysis, industry insights, and the cloud computing stories that matter. Join thousands of cloud professionals staying ahead of the curve.</p>
+            <h1>Your Weekly Cloud News Podcast</h1>
+            <p>Deep dives into AWS, Azure, and Google Cloud — plus AI, DevOps, and FinOps trends shaping the industry. Expert analysis, real-world insights, and the stories that matter to cloud professionals.</p>
         </div>
         
         <?php
@@ -66,8 +66,9 @@ get_header();
                                 </div>
                                 
                                 <div class="volume-control">
-                                    <button class="player-btn volume-btn" id="homepage-volume-btn">🔊</button>
-                                    <input type="range" id="homepage-volume" min="0" max="100" value="100" class="volume-slider">
+                                    <button class="player-btn volume-btn" id="homepage-volume-btn" aria-label="<?php esc_attr_e( 'Mute/Unmute', 'cloudpod' ); ?>">🔊</button>
+                                    <label for="homepage-volume" class="screen-reader-text"><?php esc_html_e( 'Volume', 'cloudpod' ); ?></label>
+                                    <input type="range" id="homepage-volume" min="0" max="100" value="100" class="volume-slider" aria-label="<?php esc_attr_e( 'Volume', 'cloudpod' ); ?>">
                                 </div>
                             </div>
                             

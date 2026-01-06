@@ -74,18 +74,18 @@ add_action( 'after_setup_theme', 'cloudpod_content_width', 0 );
  */
 function cloudpod_scripts() {
     // Main stylesheet
-    wp_enqueue_style( 'cloudpod-style', get_stylesheet_uri(), array(), '1.1.1' );
+    wp_enqueue_style( 'cloudpod-style', get_stylesheet_uri(), array(), '1.2.3' );
 
     // Custom JavaScript with defer loading
-    wp_enqueue_script( 'cloudpod-audio-player', get_template_directory_uri() . '/js/audio-player.js', array(), '1.1.1', true );
+    wp_enqueue_script( 'cloudpod-audio-player', get_template_directory_uri() . '/js/audio-player.js', array(), '1.2.1', true );
     wp_script_add_data( 'cloudpod-audio-player', 'defer', true );
-    
-    wp_enqueue_script( 'cloudpod-navigation', get_template_directory_uri() . '/js/navigation.js', array(), '1.1.1', true );
+
+    wp_enqueue_script( 'cloudpod-navigation', get_template_directory_uri() . '/js/navigation.js', array(), '1.2.1', true );
     wp_script_add_data( 'cloudpod-navigation', 'defer', true );
-    
+
     // Homepage player
     if ( is_front_page() ) {
-        wp_enqueue_script( 'cloudpod-homepage-player', get_template_directory_uri() . '/js/homepage-player.js', array(), '1.1.1', true );
+        wp_enqueue_script( 'cloudpod-homepage-player', get_template_directory_uri() . '/js/homepage-player.js', array(), '1.2.1', true );
         wp_script_add_data( 'cloudpod-homepage-player', 'defer', true );
     }
 
@@ -487,3 +487,185 @@ function cloudpod_add_image_dimensions( $image, $attachment_id, $size ) {
     return $image;
 }
 add_filter( 'post_thumbnail_html', 'cloudpod_add_image_dimensions', 10, 3 );
+
+/**
+ * v1.2.0 Performance Optimizations
+ */
+
+// Move jQuery to footer and add defer (frontend only, skip editors)
+function cloudpod_optimize_jquery() {
+    // Skip in admin, Elementor editor, customizer, or preview
+    if ( is_admin() ||
+         isset( $_GET['elementor-preview'] ) ||
+         isset( $_GET['action'] ) && $_GET['action'] === 'elementor' ||
+         is_customize_preview() ) {
+        return;
+    }
+
+    // Deregister default jQuery
+    wp_deregister_script( 'jquery' );
+    wp_deregister_script( 'jquery-core' );
+    wp_deregister_script( 'jquery-migrate' );
+
+    // Re-register jQuery in footer with defer
+    wp_register_script( 'jquery-core', includes_url( '/js/jquery/jquery.min.js' ), array(), '3.7.1', true );
+    wp_register_script( 'jquery-migrate', includes_url( '/js/jquery/jquery-migrate.min.js' ), array( 'jquery-core' ), '3.4.1', true );
+    wp_register_script( 'jquery', false, array( 'jquery-core', 'jquery-migrate' ), '3.7.1', true );
+}
+add_action( 'wp_enqueue_scripts', 'cloudpod_optimize_jquery', 1 );
+
+// Add defer attribute to jQuery scripts (frontend only)
+function cloudpod_add_defer_to_scripts( $tag, $handle ) {
+    // Skip in admin or Elementor editor
+    if ( is_admin() || isset( $_GET['elementor-preview'] ) || isset( $_GET['action'] ) ) {
+        return $tag;
+    }
+
+    $defer_scripts = array( 'jquery-core', 'jquery-migrate', 'jquery' );
+
+    if ( in_array( $handle, $defer_scripts ) ) {
+        return str_replace( ' src', ' defer src', $tag );
+    }
+
+    return $tag;
+}
+add_filter( 'script_loader_tag', 'cloudpod_add_defer_to_scripts', 10, 2 );
+
+// Dequeue unused plugin assets on front page
+function cloudpod_dequeue_unused_assets() {
+    // Only on front page - don't break other pages
+    if ( is_front_page() || is_home() ) {
+        // Dequeue WooCommerce styles if not needed on homepage
+        wp_dequeue_style( 'woocommerce-general' );
+        wp_dequeue_style( 'woocommerce-layout' );
+        wp_dequeue_style( 'woocommerce-smallscreen' );
+        wp_dequeue_style( 'wc-blocks-style' );
+        wp_dequeue_style( 'wc-blocks-vendors-style' );
+
+        // Dequeue WooCommerce scripts on homepage
+        wp_dequeue_script( 'woocommerce' );
+        wp_dequeue_script( 'wc-cart-fragments' );
+        wp_dequeue_script( 'wc-add-to-cart' );
+        wp_dequeue_script( 'jquery-blockui' );
+        wp_dequeue_script( 'js-cookie' );
+        wp_dequeue_script( 'sourcebuster' );
+
+        // Dequeue block library CSS if not using Gutenberg blocks
+        wp_dequeue_style( 'wp-block-library' );
+        wp_dequeue_style( 'wp-block-library-theme' );
+        wp_dequeue_style( 'global-styles' );
+    }
+
+    // Dequeue Castos player on non-podcast pages (already have custom player)
+    if ( ! is_singular( 'podcast' ) && ! is_post_type_archive( 'podcast' ) ) {
+        wp_dequeue_style( 'castos-player' );
+        wp_dequeue_script( 'castos-player' );
+    }
+}
+add_action( 'wp_enqueue_scripts', 'cloudpod_dequeue_unused_assets', 100 );
+
+// Lazy load reCAPTCHA - only load when user interacts with form
+function cloudpod_lazy_load_recaptcha() {
+    if ( is_front_page() || is_home() ) {
+        ?>
+        <script>
+        (function() {
+            var recaptchaLoaded = false;
+            function loadRecaptcha() {
+                if (recaptchaLoaded) return;
+                recaptchaLoaded = true;
+
+                // Find and load reCAPTCHA scripts that were deferred
+                var forms = document.querySelectorAll('form');
+                forms.forEach(function(form) {
+                    form.removeEventListener('focus', loadRecaptcha, true);
+                });
+            }
+
+            // Load on form interaction
+            document.querySelectorAll('form').forEach(function(form) {
+                form.addEventListener('focus', loadRecaptcha, true);
+                form.addEventListener('click', loadRecaptcha, true);
+            });
+
+            // Fallback: load after 5 seconds if user is still on page
+            setTimeout(loadRecaptcha, 5000);
+        })();
+        </script>
+        <?php
+    }
+}
+add_action( 'wp_footer', 'cloudpod_lazy_load_recaptcha', 99 );
+
+// Add preconnect hints for third-party resources
+function cloudpod_add_preconnect_hints() {
+    // Google Tag Manager
+    echo '<link rel="preconnect" href="https://www.googletagmanager.com" crossorigin>' . "\n";
+    echo '<link rel="dns-prefetch" href="https://www.googletagmanager.com">' . "\n";
+
+    // Google Analytics
+    echo '<link rel="preconnect" href="https://www.google-analytics.com" crossorigin>' . "\n";
+    echo '<link rel="dns-prefetch" href="https://www.google-analytics.com">' . "\n";
+
+    // reCAPTCHA
+    echo '<link rel="preconnect" href="https://www.gstatic.com" crossorigin>' . "\n";
+    echo '<link rel="dns-prefetch" href="https://www.gstatic.com">' . "\n";
+    echo '<link rel="preconnect" href="https://www.google.com" crossorigin>' . "\n";
+
+    // Microsoft Clarity
+    echo '<link rel="preconnect" href="https://www.clarity.ms" crossorigin>' . "\n";
+    echo '<link rel="dns-prefetch" href="https://www.clarity.ms">' . "\n";
+}
+add_action( 'wp_head', 'cloudpod_add_preconnect_hints', 1 );
+
+// Add font-display: swap to any loaded fonts
+function cloudpod_font_display_swap( $html, $handle ) {
+    // Add font-display: swap to Google Fonts or local fonts
+    if ( strpos( $handle, 'font' ) !== false || strpos( $html, 'fonts.googleapis.com' ) !== false ) {
+        $html = str_replace( "rel='stylesheet'", "rel='stylesheet' media='print' onload=\"this.media='all'\"", $html );
+    }
+    return $html;
+}
+add_filter( 'style_loader_tag', 'cloudpod_font_display_swap', 10, 2 );
+
+// Add cache headers for static assets (when not handled by web server)
+function cloudpod_add_cache_headers() {
+    // Only for front-end, non-logged-in users
+    if ( is_admin() || is_user_logged_in() ) {
+        return;
+    }
+
+    // Add cache headers for the main page
+    header( 'Cache-Control: public, max-age=3600' ); // 1 hour for HTML
+}
+add_action( 'send_headers', 'cloudpod_add_cache_headers' );
+
+// Only load reCAPTCHA on contact page (saves ~1.1s on other pages)
+function cloudpod_conditional_recaptcha() {
+    // Only load reCAPTCHA on the contact page
+    if ( ! is_page( array( 'contact-us', 'contact' ) ) ) {
+        wp_dequeue_script( 'elementor-recaptcha' );
+        wp_dequeue_script( 'elementor-recaptcha-v3' );
+        wp_dequeue_script( 'recaptcha' );
+        wp_deregister_script( 'recaptcha' );
+
+        // Also remove the inline reCAPTCHA script
+        add_filter( 'script_loader_tag', function( $tag, $handle ) {
+            if ( strpos( $handle, 'recaptcha' ) !== false ) {
+                return '';
+            }
+            return $tag;
+        }, 10, 2 );
+    }
+}
+add_action( 'wp_enqueue_scripts', 'cloudpod_conditional_recaptcha', 999 );
+
+// Disable Google Fonts from Elementor (use system fonts)
+add_filter( 'elementor/frontend/print_google_fonts', '__return_false' );
+
+// Disable FontAwesome from Elementor (not being used)
+add_action( 'elementor/frontend/after_register_styles', function() {
+    wp_deregister_style( 'font-awesome' );
+    wp_deregister_style( 'font-awesome-5-all' );
+    wp_deregister_style( 'font-awesome-4-shim' );
+}, 20 );
