@@ -74,7 +74,7 @@ add_action( 'after_setup_theme', 'cloudpod_content_width', 0 );
  */
 function cloudpod_scripts() {
     // Main stylesheet
-    wp_enqueue_style( 'cloudpod-style', get_stylesheet_uri(), array(), '1.2.3' );
+    wp_enqueue_style( 'cloudpod-style', get_stylesheet_uri(), array(), '1.2.4' );
 
     // Custom JavaScript with defer loading
     wp_enqueue_script( 'cloudpod-audio-player', get_template_directory_uri() . '/js/audio-player.js', array(), '1.2.1', true );
@@ -492,9 +492,11 @@ add_filter( 'post_thumbnail_html', 'cloudpod_add_image_dimensions', 10, 3 );
  * v1.2.0 Performance Optimizations
  */
 
-// Move jQuery to footer and add defer (frontend only, skip editors)
+// jQuery optimizations disabled - not compatible with Elementor
+// Elementor requires jQuery to load synchronously in the header
+// Moving jQuery to footer or adding defer breaks Elementor modules
+/*
 function cloudpod_optimize_jquery() {
-    // Skip in admin, Elementor editor, customizer, or preview
     if ( is_admin() ||
          isset( $_GET['elementor-preview'] ) ||
          isset( $_GET['action'] ) && $_GET['action'] === 'elementor' ||
@@ -502,22 +504,26 @@ function cloudpod_optimize_jquery() {
         return;
     }
 
-    // Deregister default jQuery
     wp_deregister_script( 'jquery' );
     wp_deregister_script( 'jquery-core' );
     wp_deregister_script( 'jquery-migrate' );
 
-    // Re-register jQuery in footer with defer
     wp_register_script( 'jquery-core', includes_url( '/js/jquery/jquery.min.js' ), array(), '3.7.1', true );
     wp_register_script( 'jquery-migrate', includes_url( '/js/jquery/jquery-migrate.min.js' ), array( 'jquery-core' ), '3.4.1', true );
     wp_register_script( 'jquery', false, array( 'jquery-core', 'jquery-migrate' ), '3.7.1', true );
 }
-add_action( 'wp_enqueue_scripts', 'cloudpod_optimize_jquery', 1 );
 
-// Add defer attribute to jQuery scripts (frontend only)
 function cloudpod_add_defer_to_scripts( $tag, $handle ) {
-    // Skip in admin or Elementor editor
-    if ( is_admin() || isset( $_GET['elementor-preview'] ) || isset( $_GET['action'] ) ) {
+    $is_login_page = false;
+    if ( isset( $_SERVER['SCRIPT_NAME'] ) ) {
+        $script_name = basename( $_SERVER['SCRIPT_NAME'] );
+        $is_login_page = in_array( $script_name, array( 'wp-login.php', 'wp-register.php' ) );
+    }
+
+    if ( is_admin() ||
+         isset( $_GET['elementor-preview'] ) ||
+         isset( $_GET['action'] ) ||
+         $is_login_page ) {
         return $tag;
     }
 
@@ -529,7 +535,12 @@ function cloudpod_add_defer_to_scripts( $tag, $handle ) {
 
     return $tag;
 }
-add_filter( 'script_loader_tag', 'cloudpod_add_defer_to_scripts', 10, 2 );
+
+if ( ! isset( $_SERVER['SCRIPT_NAME'] ) || ! in_array( basename( $_SERVER['SCRIPT_NAME'] ), array( 'wp-login.php', 'wp-register.php' ) ) ) {
+    add_action( 'wp_enqueue_scripts', 'cloudpod_optimize_jquery', 1 );
+    add_filter( 'script_loader_tag', 'cloudpod_add_defer_to_scripts', 10, 2 );
+}
+*/
 
 // Dequeue unused plugin assets on front page
 function cloudpod_dequeue_unused_assets() {
@@ -642,6 +653,11 @@ add_action( 'send_headers', 'cloudpod_add_cache_headers' );
 
 // Only load reCAPTCHA on contact page (saves ~1.1s on other pages)
 function cloudpod_conditional_recaptcha() {
+    // Don't block reCAPTCHA on login/register pages (needed for Wordfence 2FA)
+    if ( isset( $GLOBALS['pagenow'] ) && in_array( $GLOBALS['pagenow'], array( 'wp-login.php', 'wp-register.php' ) ) ) {
+        return;
+    }
+
     // Only load reCAPTCHA on the contact page
     if ( ! is_page( array( 'contact-us', 'contact' ) ) ) {
         wp_dequeue_script( 'elementor-recaptcha' );
