@@ -74,7 +74,7 @@ add_action( 'after_setup_theme', 'cloudpod_content_width', 0 );
  */
 function cloudpod_scripts() {
     // Main stylesheet
-    wp_enqueue_style( 'cloudpod-style', get_stylesheet_uri(), array(), '1.2.4' );
+    wp_enqueue_style( 'cloudpod-style', get_stylesheet_uri(), array(), '1.2.7' );
 
     // Custom JavaScript with defer loading
     wp_enqueue_script( 'cloudpod-audio-player', get_template_directory_uri() . '/js/audio-player.js', array(), '1.2.1', true );
@@ -646,6 +646,12 @@ function cloudpod_add_cache_headers() {
         return;
     }
 
+    // Feed-specific cache control (3 days max for podcast feeds)
+    if ( is_feed() ) {
+        header( 'Cache-Control: public, max-age=259200' ); // 3 days for feeds
+        return;
+    }
+
     // Add cache headers for the main page
     header( 'Cache-Control: public, max-age=3600' ); // 1 hour for HTML
 }
@@ -685,3 +691,46 @@ add_action( 'elementor/frontend/after_register_styles', function() {
     wp_deregister_style( 'font-awesome-5-all' );
     wp_deregister_style( 'font-awesome-4-shim' );
 }, 20 );
+
+/**
+ * Auto-clear cache when podcast episodes are published
+ * Prevents cache inconsistencies when publishing via API/automation
+ */
+function cloudpod_clear_cache_on_publish( $new_status, $old_status, $post ) {
+    // Only for podcast post type
+    if ( $post->post_type !== 'podcast' ) {
+        return;
+    }
+
+    // Only when status changes to or from 'publish'
+    if ( $new_status !== 'publish' && $old_status !== 'publish' ) {
+        return;
+    }
+
+    // Clear APCu cache if available
+    if ( function_exists( 'apcu_clear_cache' ) ) {
+        apcu_clear_cache();
+    }
+
+    // Flush WordPress object cache
+    wp_cache_flush();
+
+    // Clear specific post cache
+    clean_post_cache( $post->ID );
+
+    // Clear podcast-related transients
+    delete_transient( 'cloudpod_latest_episodes' );
+    delete_transient( 'cloudpod_episode_count' );
+
+    // Log the cache clear for debugging
+    if ( defined( 'WP_DEBUG' ) && WP_DEBUG && defined( 'WP_DEBUG_LOG' ) && WP_DEBUG_LOG ) {
+        error_log( sprintf(
+            'Cache cleared for podcast episode: ID=%d, Title="%s", Old Status=%s, New Status=%s',
+            $post->ID,
+            $post->post_title,
+            $old_status,
+            $new_status
+        ) );
+    }
+}
+add_action( 'transition_post_status', 'cloudpod_clear_cache_on_publish', 10, 3 );
