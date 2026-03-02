@@ -164,7 +164,9 @@ get_header();
                                             <span><?php echo esc_html( $duration ); ?></span>
                                         <?php endif; ?>
                                     </div>
-                                    
+                                    <div class="episode-excerpt">
+                                        <?php echo wp_trim_words( get_the_excerpt(), 20 ); ?>
+                                    </div>
                                     <?php
                                     $audio_url = cloudpod_get_audio_url();
                                     if ( $audio_url ) :

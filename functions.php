@@ -74,7 +74,7 @@ add_action( 'after_setup_theme', 'cloudpod_content_width', 0 );
  */
 function cloudpod_scripts() {
     // Main stylesheet
-    wp_enqueue_style( 'cloudpod-style', get_stylesheet_uri(), array(), '1.2.7' );
+    wp_enqueue_style( 'cloudpod-style', get_stylesheet_uri(), array(), '1.2.8' );
 
     // Custom JavaScript with defer loading
     wp_enqueue_script( 'cloudpod-audio-player', get_template_directory_uri() . '/js/audio-player.js', array(), '1.2.1', true );
