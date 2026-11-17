@@ -76,10 +76,12 @@ get_header();
                                 <a href="<?php the_permalink(); ?>" class="hero-player-link">Show Notes</a>
                                 
                                 <?php
-                                $transcript_url = cloudpod_get_transcript_url();
+                                // Prefer the inline transcript on the episode page when one exists;
+                                // legacy episodes fall back to the S3 .txt link.
+                                $transcript_url = cloudpod_has_transcript_text() ? get_permalink() . '#transcript' : cloudpod_get_transcript_url();
                                 if ( $transcript_url ) :
                                     ?>
-                                    <a href="<?php echo esc_url( $transcript_url ); ?>" target="_blank" class="hero-download-btn">
+                                    <a href="<?php echo esc_url( $transcript_url ); ?>"<?php echo cloudpod_has_transcript_text() ? '' : ' target="_blank" rel="noopener"'; ?> class="hero-download-btn">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                                             <polyline points="14 2 14 8 20 8"></polyline>

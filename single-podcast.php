@@ -16,7 +16,18 @@ get_header();
 
         <article id="post-<?php the_ID(); ?>" <?php post_class( 'single-podcast' ); ?>>
             <header class="entry-header">
-                <?php the_title( '<h1 class="entry-title">', '</h1>' ); ?>
+                <?php
+                // Descriptive, search-facing H1 when the ACF/meta field `seo_headline`
+                // is set (written by bolt-bot or in the editor); the episode title then
+                // becomes a subtitle. Falls back to the plain title on legacy episodes.
+                $seo_headline = trim( (string) get_post_meta( get_the_ID(), 'seo_headline', true ) );
+                if ( '' !== $seo_headline ) :
+                    ?>
+                    <h1 class="entry-title"><?php echo esc_html( $seo_headline ); ?></h1>
+                    <p class="entry-subtitle"><?php the_title(); ?></p>
+                <?php else : ?>
+                    <?php the_title( '<h1 class="entry-title">', '</h1>' ); ?>
+                <?php endif; ?>
                 
                 <div class="podcast-meta">
                     <span class="episode-date">
@@ -43,7 +54,8 @@ get_header();
                             <img src="<?php the_post_thumbnail_url( 'medium' ); ?>" alt="<?php the_title_attribute(); ?>" class="player-artwork">
                         <?php endif; ?>
                         <div class="player-info">
-                            <h3><?php the_title(); ?></h3>
+                            <?php // Not a heading: the H1 above already carries the title. ?>
+                            <p class="player-title"><?php the_title(); ?></p>
                             <div class="podcast-meta">
                                 <span><?php echo get_the_date(); ?></span>
                                 <?php if ( $duration ) : ?>
@@ -92,9 +104,10 @@ get_header();
             <?php endif; ?>
 
             <?php
-            $audio_url = cloudpod_get_audio_url();
-            $transcript_url = cloudpod_get_transcript_url();
-            
+            $audio_url           = cloudpod_get_audio_url();
+            $transcript_url      = cloudpod_get_transcript_url();
+            $has_transcript_text = cloudpod_has_transcript_text();
+
             if ( $audio_url || $transcript_url ) :
                 ?>
                 <div class="podcast-downloads">
@@ -109,12 +122,21 @@ get_header();
                             </a>
                         <?php endif; ?>
 
-                        <?php if ( $transcript_url ) : ?>
-                            <a href="<?php echo esc_url( $transcript_url ); ?>" target="_blank" class="download-btn">
+                        <?php if ( $has_transcript_text ) : ?>
+                            <a href="#transcript" class="download-btn">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                 </svg>
-                                <?php esc_html_e( 'View Transcript', 'cloudpod' ); ?>
+                                <?php esc_html_e( 'Read Transcript', 'cloudpod' ); ?>
+                            </a>
+                        <?php endif; ?>
+
+                        <?php if ( $transcript_url ) : ?>
+                            <a href="<?php echo esc_url( $transcript_url ); ?>" target="_blank" rel="noopener" class="download-btn">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                <?php echo $has_transcript_text ? esc_html__( 'Download Transcript', 'cloudpod' ) : esc_html__( 'View Transcript', 'cloudpod' ); ?>
                             </a>
                         <?php endif; ?>
                     </div>
@@ -135,6 +157,12 @@ get_header();
                         );
                         ?>
                     </div>
+
+                    <?php
+                    // Inline transcript (collapsed). Echoes nothing on legacy
+                    // episodes that only have the S3 transcript_file URL.
+                    cloudpod_render_transcript();
+                    ?>
                 </div>
                 
                 <aside class="episode-sidebar">

@@ -74,7 +74,7 @@ add_action( 'after_setup_theme', 'cloudpod_content_width', 0 );
  */
 function cloudpod_scripts() {
     // Main stylesheet
-    wp_enqueue_style( 'cloudpod-style', get_stylesheet_uri(), array(), '1.2.8' );
+    wp_enqueue_style( 'cloudpod-style', get_stylesheet_uri(), array(), '1.3.3' );
 
     // Custom JavaScript with defer loading
     wp_enqueue_script( 'cloudpod-audio-player', get_template_directory_uri() . '/js/audio-player.js', array(), '1.2.1', true );
@@ -180,6 +180,40 @@ function cloudpod_widgets_init() {
     ) );
 }
 add_action( 'widgets_init', 'cloudpod_widgets_init' );
+
+/**
+ * Episode transcript meta, inline rendering and schema.
+ */
+require_once get_template_directory() . '/inc/transcript.php';
+
+/**
+ * `seo_headline`: descriptive H1 for episode pages. Managed as an ACF text field
+ * on the podcast post type (name must be exactly seo_headline). Registered here
+ * too so bolt-bot can write it through the REST `meta` object like transcript_text.
+ */
+function cloudpod_register_seo_headline_meta() {
+    register_post_meta(
+        'podcast',
+        'seo_headline',
+        array(
+            'type'              => 'string',
+            'description'       => 'Descriptive, search-facing headline rendered as the episode page H1.',
+            'single'            => true,
+            'default'           => '',
+            'show_in_rest'      => true,
+            'sanitize_callback' => 'sanitize_text_field',
+            'auth_callback'     => function ( $allowed, $meta_key, $object_id ) {
+                return current_user_can( 'edit_post', (int) $object_id );
+            },
+        )
+    );
+}
+add_action( 'init', 'cloudpod_register_seo_headline_meta' );
+
+/**
+ * Static podcast feeds (prerendered on change, served with 304s) and robots.txt.
+ */
+require_once get_template_directory() . '/inc/feed-cache.php';
 
 /**
  * Seriously Simple Podcasting Integration
@@ -432,8 +466,11 @@ function cloudpod_disable_embeds() {
 }
 add_action( 'wp_footer', 'cloudpod_disable_embeds' );
 
-// Remove query strings from static resources
+// Remove query strings from static resources (front-end only)
 function cloudpod_remove_query_strings( $src ) {
+    if ( is_admin() ) {
+        return $src;
+    }
     if ( strpos( $src, '?ver=' ) ) {
         $src = remove_query_arg( 'ver', $src );
     }
@@ -463,13 +500,16 @@ function cloudpod_add_fetchpriority( $attr, $attachment ) {
 }
 add_filter( 'wp_get_attachment_image_attributes', 'cloudpod_add_fetchpriority', 20, 2 );
 
-// Defer CSS loading for non-critical stylesheets
+// Defer CSS loading for non-critical stylesheets (front-end only)
 function cloudpod_defer_css( $html, $handle ) {
+    if ( is_admin() ) {
+        return $html;
+    }
     // Don't defer main stylesheet
     if ( $handle === 'cloudpod-style' ) {
         return $html;
     }
-    
+
     // Defer other stylesheets
     $html = str_replace( "rel='stylesheet'", "rel='preload' as='style' onload=\"this.onload=null;this.rel='stylesheet'\"", $html );
     return $html;
@@ -629,8 +669,11 @@ function cloudpod_add_preconnect_hints() {
 }
 add_action( 'wp_head', 'cloudpod_add_preconnect_hints', 1 );
 
-// Add font-display: swap to any loaded fonts
+// Add font-display: swap to any loaded fonts (front-end only)
 function cloudpod_font_display_swap( $html, $handle ) {
+    if ( is_admin() ) {
+        return $html;
+    }
     // Add font-display: swap to Google Fonts or local fonts
     if ( strpos( $handle, 'font' ) !== false || strpos( $html, 'fonts.googleapis.com' ) !== false ) {
         $html = str_replace( "rel='stylesheet'", "rel='stylesheet' media='print' onload=\"this.media='all'\"", $html );
